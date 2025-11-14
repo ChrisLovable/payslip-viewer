@@ -129,20 +129,11 @@
                 // Load months when page loads
                 loadMonths();
                 setupInputZoomPrevention();
-            }
-            
-            // Run initialization
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', init);
-            } else {
-                // DOM already loaded
-                init();
-            }
-            
-            // Only attach upload form handler if upload form exists (admin mode)
-            const uploadForm = document.getElementById('uploadForm');
-            if (uploadForm) {
-                uploadForm.addEventListener('submit', async (e) => {
+                
+                // Only attach upload form handler if upload form exists (admin mode)
+                const uploadForm = document.getElementById('uploadForm');
+                if (uploadForm) {
+                    uploadForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData();
             const monthInput = document.getElementById('uploadMonth');
@@ -188,8 +179,17 @@
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalText;
             }
-            });
-        }
+                    });
+                }
+            }
+            
+            // Run initialization
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                // DOM already loaded
+                init();
+            }
         
         // Ensure form handler is attached after page loads
         function attachViewFormHandler() {
