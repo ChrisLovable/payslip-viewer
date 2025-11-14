@@ -113,6 +113,11 @@ button {
     -webkit-tap-highlight-color: rgba(102, 126, 234, 0.3);
 }
 
+#viewForm button {
+    background: #dc3545 !important;
+    background-color: #dc3545 !important;
+}
+
 button:active:not(:disabled) {
     background: #5568d3;
     transform: scale(0.98);

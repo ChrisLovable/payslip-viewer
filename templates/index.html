@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#667eea">
     <title>Payslip Viewer</title>
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2">
 </head>
 <body>
     <div class="container">
@@ -35,7 +35,7 @@
                     <option value="">Loading months...</option>
                 </select>
                 <input type="text" id="idNumber" placeholder="Enter your ID Number" required>
-                <button type="submit" style="background: #dc3545;">View Payslip</button>
+                <button type="submit" style="background: #dc3545 !important; background-color: #dc3545 !important;">View Payslip</button>
             </form>
             <div id="viewStatus"></div>
             <div id="payslipContainer" style="display: none; margin-top: 20px;">
