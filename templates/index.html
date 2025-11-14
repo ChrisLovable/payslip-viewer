@@ -29,7 +29,7 @@
         
         <div class="section">
             <h2>View Payslip</h2>
-            <form id="viewForm" onsubmit="return false;">
+            <form id="viewForm">
                 <label for="viewMonth">Select Month:</label>
                 <select id="viewMonth" required>
                     <option value="">Loading months...</option>
@@ -49,30 +49,13 @@
     </div>
 
     <script>
-        // Wait for DOM to be fully loaded
-        (function() {
-            // Mobile optimizations
-            // Prevent double-tap zoom on buttons
-            let lastTouchEnd = 0;
-            document.addEventListener('touchend', function(event) {
-                const now = Date.now();
-                if (now - lastTouchEnd <= 300) {
-                    event.preventDefault();
-                }
-                lastTouchEnd = now;
-            }, false);
-            
-            // Load available months on page load
-            async function loadMonths() {
+        // Load months
+        async function loadMonths() {
             try {
                 const response = await fetch('/months');
                 const data = await response.json();
                 const monthSelect = document.getElementById('viewMonth');
-                
-                if (!monthSelect) {
-                    console.error('viewMonth element not found');
-                    return;
-                }
+                if (!monthSelect) return;
                 
                 if (data.months && data.months.length > 0) {
                     monthSelect.innerHTML = '<option value="">Select a month...</option>';
@@ -91,128 +74,68 @@
                 }
             } catch (error) {
                 console.error('Error loading months:', error);
-                const monthSelect = document.getElementById('viewMonth');
-                if (monthSelect) {
-                    monthSelect.innerHTML = '<option value="">Error loading months</option>';
-                }
             }
         }
         
-            // Prevent zoom on input focus (but allow pinch zoom for PDF)
-            function setupInputZoomPrevention() {
-                const inputs = document.querySelectorAll('input[type="text"], input[type="month"], select');
-                if (inputs && inputs.length > 0) {
-                    inputs.forEach(input => {
-                        if (input) {
-                            input.addEventListener('focus', function() {
-                                if (window.innerWidth < 768) {
-                                    const viewport = document.querySelector('meta[name="viewport"]');
-                                    if (viewport) {
-                                        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-                                    }
-                                }
-                            });
-                            
-                            input.addEventListener('blur', function() {
-                                const viewport = document.querySelector('meta[name="viewport"]');
-                                if (viewport) {
-                                    viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
-                                }
-                            });
-                        }
-                    });
-                }
-            }
-            
-            // Wait for DOM to be ready before running
-            function init() {
-                // Load months when page loads
-                loadMonths();
-                setupInputZoomPrevention();
-                
-                // Only attach upload form handler if upload form exists (admin mode)
-                const uploadForm = document.getElementById('uploadForm');
-                if (uploadForm) {
-                    uploadForm.addEventListener('submit', async (e) => {
-                        e.preventDefault();
-                        const formData = new FormData();
-                        const monthInput = document.getElementById('uploadMonth');
-                        const monthValue = monthInput.value; // Format: YYYY-MM
-                        
-                        if (!monthValue) {
-                            document.getElementById('uploadStatus').innerHTML = '<p class="error">✗ Please select a month</p>';
-                            return;
-                        }
-                        
-                        formData.append('pdf', document.getElementById('pdfFile').files[0]);
-                        formData.append('month', monthValue);
-                        formData.append('admin_key', 'admin123'); // Admin secret key
-                        
-                        const statusDiv = document.getElementById('uploadStatus');
-                        const submitBtn = e.target.querySelector('button');
-                        const originalText = submitBtn.textContent;
-                        
-                        statusDiv.innerHTML = '<p class="loading">Uploading and processing PDF...</p>';
-                        submitBtn.disabled = true;
-                        submitBtn.textContent = 'Uploading...';
-                        
-                        try {
-                            const response = await fetch('/upload', {
-                                method: 'POST',
-                                body: formData
-                            });
-                            
-                            const data = await response.json();
-                            
-                            if (response.ok) {
-                                statusDiv.innerHTML = `<p class="success">✓ ${data.message}</p>`;
-                                // Reload months list
-                                loadMonths();
-                                // Reset form
-                                document.getElementById('uploadForm').reset();
-                            } else {
-                                statusDiv.innerHTML = `<p class="error">✗ ${data.error}</p>`;
-                            }
-                        } catch (error) {
-                            statusDiv.innerHTML = `<p class="error">✗ Upload failed: ${error.message}</p>`;
-                        } finally {
-                            submitBtn.disabled = false;
-                            submitBtn.textContent = originalText;
-                        }
-                    });
-                }
-                
-                // Attach view form handler
-                attachViewFormHandler();
-            }
-            
-            // Ensure form handler is attached after page loads
-            function attachViewFormHandler() {
-                const viewForm = document.getElementById('viewForm');
-                if (!viewForm) {
-                    console.error('View form not found');
+        // Upload form handler
+        const uploadForm = document.getElementById('uploadForm');
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData();
+                const monthValue = document.getElementById('uploadMonth').value;
+                if (!monthValue) {
+                    document.getElementById('uploadStatus').innerHTML = '<p class="error">✗ Please select a month</p>';
                     return;
                 }
                 
-                // Remove any existing listeners
-                const newForm = viewForm.cloneNode(true);
-                viewForm.parentNode.replaceChild(newForm, viewForm);
+                formData.append('pdf', document.getElementById('pdfFile').files[0]);
+                formData.append('month', monthValue);
+                formData.append('admin_key', 'admin123');
                 
-                newForm.addEventListener('submit', async (e) => {
+                const statusDiv = document.getElementById('uploadStatus');
+                const submitBtn = e.target.querySelector('button');
+                const originalText = submitBtn.textContent;
+                
+                statusDiv.innerHTML = '<p class="loading">Uploading...</p>';
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Uploading...';
+                
+                try {
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        statusDiv.innerHTML = `<p class="success">✓ ${data.message}</p>`;
+                        loadMonths();
+                        uploadForm.reset();
+                    } else {
+                        statusDiv.innerHTML = `<p class="error">✗ ${data.error}</p>`;
+                    }
+                } catch (error) {
+                    statusDiv.innerHTML = `<p class="error">✗ Upload failed: ${error.message}</p>`;
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                }
+            });
+        }
+        
+        // View form handler
+        const viewForm = document.getElementById('viewForm');
+        if (viewForm) {
+            viewForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                e.stopPropagation();
-                
                 const idNumber = document.getElementById('idNumber').value.trim();
                 const month = document.getElementById('viewMonth').value;
                 
-                if (!month) {
-                    document.getElementById('viewStatus').innerHTML = '<p class="error">✗ Please select a month</p>';
-                    return false;
-                }
-                
-                if (!idNumber) {
-                    document.getElementById('viewStatus').innerHTML = '<p class="error">✗ Please enter your ID number</p>';
-                    return false;
+                if (!month || !idNumber) {
+                    document.getElementById('viewStatus').innerHTML = '<p class="error">✗ Please select a month and enter your ID number</p>';
+                    return;
                 }
                 
                 const statusDiv = document.getElementById('viewStatus');
@@ -220,7 +143,7 @@
                 const viewer = document.getElementById('payslipViewer');
                 const downloadLink = document.getElementById('downloadLink');
                 const openLink = document.getElementById('openLink');
-                const submitBtn = newForm.querySelector('button');
+                const submitBtn = e.target.querySelector('button');
                 const originalText = submitBtn.textContent;
                 
                 statusDiv.innerHTML = '<p class="loading">Loading payslip...</p>';
@@ -229,115 +152,49 @@
                 submitBtn.textContent = 'Loading...';
                 
                 try {
-                    console.log('=== FETCHING PAYSLIP ===');
-                    console.log('ID Number:', idNumber);
-                    console.log('Month:', month);
-                    
                     const response = await fetch('/view', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ id_number: idNumber, month: month })
                     });
                     
-                    console.log('=== RESPONSE RECEIVED ===');
-                    console.log('Status:', response.status);
-                    console.log('Status Text:', response.statusText);
                     const contentType = response.headers.get('content-type') || '';
-                    console.log('Content-Type:', contentType);
-                    console.log('Headers:', [...response.headers.entries()]);
                     
-                    if (response.ok) {
-                        if (contentType.includes('application/pdf')) {
-                            const blob = await response.blob();
-                            console.log('=== PDF BLOB ===');
-                            console.log('Blob size:', blob.size, 'bytes');
-                            console.log('Blob type:', blob.type);
-                            
-                            if (blob.size === 0) {
-                                statusDiv.innerHTML = '<p class="error">✗ Received empty PDF. Please try again.</p>';
-                                return false;
-                            }
-                            
-                            // Create object URL
-                            const url = URL.createObjectURL(blob);
-                            console.log('Blob URL created:', url);
-                            
-                            // Set iframe source
-                            viewer.onload = function() {
-                                console.log('Iframe loaded successfully');
-                            };
-                            viewer.onerror = function(e) {
-                                console.error('Iframe error:', e);
-                                statusDiv.innerHTML = '<p class="error">✗ Error displaying PDF. Use "Open in New Tab" button instead.</p>';
-                            };
-                            viewer.src = url;
-                            
-                            // Set links
-                            openLink.href = url;
-                            downloadLink.href = url;
-                            downloadLink.download = `payslip_${idNumber}_${month}.pdf`;
-                            
-                            // Show container
-                            container.style.display = 'block';
-                            statusDiv.innerHTML = '<p class="success">✓ Payslip loaded! If you don\'t see it below, click "Open in New Tab".</p>';
-                            
-                            // Scroll to viewer
-                            setTimeout(() => {
-                                container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                            }, 100);
-                            
-                            console.log('=== SUCCESS ===');
-                        } else {
-                            // Not a PDF
-                            const text = await response.text();
-                            console.log('=== NON-PDF RESPONSE ===');
-                            console.log('Response text:', text);
-                            try {
-                                const data = JSON.parse(text);
-                                statusDiv.innerHTML = `<p class="error">✗ ${data.error || 'Unknown error'}</p>`;
-                            } catch {
-                                statusDiv.innerHTML = `<p class="error">✗ Unexpected response. Status: ${response.status}</p>`;
-                            }
+                    if (response.ok && contentType.includes('application/pdf')) {
+                        const blob = await response.blob();
+                        if (blob.size === 0) {
+                            statusDiv.innerHTML = '<p class="error">✗ Received empty PDF</p>';
+                            return;
                         }
+                        
+                        const url = URL.createObjectURL(blob);
+                        viewer.src = url;
+                        openLink.href = url;
+                        downloadLink.href = url;
+                        downloadLink.download = `payslip_${idNumber}_${month}.pdf`;
+                        
+                        container.style.display = 'block';
+                        statusDiv.innerHTML = '<p class="success">✓ Payslip loaded!</p>';
                     } else {
-                        // Error response
                         const text = await response.text();
-                        console.log('=== ERROR RESPONSE ===');
-                        console.log('Status:', response.status);
-                        console.log('Response text:', text);
                         try {
                             const data = JSON.parse(text);
-                            statusDiv.innerHTML = `<p class="error">✗ ${data.error || 'Error loading payslip'}</p>`;
+                            statusDiv.innerHTML = `<p class="error">✗ ${data.error}</p>`;
                         } catch {
-                            statusDiv.innerHTML = `<p class="error">✗ Error ${response.status}: ${response.statusText}</p>`;
+                            statusDiv.innerHTML = `<p class="error">✗ Error loading payslip</p>`;
                         }
                     }
                 } catch (error) {
-                    console.error('=== EXCEPTION ===');
-                    console.error('Error:', error);
-                    console.error('Error message:', error.message);
-                    console.error('Error stack:', error.stack);
-                    statusDiv.innerHTML = `<p class="error">✗ Error: ${error.message}. Check console for details.</p>`;
+                    statusDiv.innerHTML = `<p class="error">✗ Error: ${error.message}</p>`;
                 } finally {
                     submitBtn.disabled = false;
                     submitBtn.textContent = originalText;
                 }
-                
-                return false;
             });
         }
-            
-            // Run initialization
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', init);
-            } else {
-                // DOM already loaded
-                init();
-            }
-        })(); // End of IIFE - ensures everything runs after DOM is ready
+        
+        // Initialize
+        loadMonths();
     </script>
 </body>
 </html>
-
