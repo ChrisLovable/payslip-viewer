@@ -6,9 +6,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#667eea">
-    <title>Payslip Viewer</title>
+    <title>Payslip Viewer v4</title>
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=3">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=4">
 </head>
 <body>
     <div class="container">
@@ -35,7 +35,7 @@
                     <option value="">Loading months...</option>
                 </select>
                 <input type="text" id="idNumber" placeholder="Enter your ID Number" required>
-                <button type="submit" style="background: #28a745 !important; background-color: #28a745 !important;">View Payslip</button>
+                <button type="submit" id="viewPayslipBtn" style="background: #28a745 !important; background-color: #28a745 !important; border: none !important;">View Payslip</button>
             </form>
             <div id="viewStatus"></div>
             <div id="payslipContainer" style="display: none; margin-top: 20px; text-align: center;">

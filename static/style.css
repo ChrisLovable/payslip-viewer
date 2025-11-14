@@ -113,9 +113,17 @@ button {
     -webkit-tap-highlight-color: rgba(102, 126, 234, 0.3);
 }
 
-#viewForm button {
+#viewForm button,
+#viewPayslipBtn {
     background: #28a745 !important;
     background-color: #28a745 !important;
+    border: none !important;
+}
+
+#viewForm button:hover,
+#viewPayslipBtn:hover {
+    background: #218838 !important;
+    background-color: #218838 !important;
 }
 
 button:active:not(:disabled) {
