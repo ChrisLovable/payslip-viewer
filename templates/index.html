@@ -178,18 +178,37 @@
                     body: JSON.stringify({ id_number: idNumber, month: month })
                 });
                 
-                if (response.ok) {
+                // Check content type
+                const contentType = response.headers.get('content-type');
+                
+                if (response.ok && contentType && contentType.includes('application/pdf')) {
                     const blob = await response.blob();
                     const url = URL.createObjectURL(blob);
                     viewer.src = url;
                     viewer.style.display = 'block';
                     statusDiv.innerHTML = '';
+                } else if (response.ok) {
+                    // Not a PDF, might be an error message
+                    const text = await response.text();
+                    try {
+                        const data = JSON.parse(text);
+                        statusDiv.innerHTML = `<p class="error">✗ ${data.error || 'Unknown error'}</p>`;
+                    } catch {
+                        statusDiv.innerHTML = `<p class="error">✗ Unexpected response format</p>`;
+                    }
                 } else {
-                    const data = await response.json();
-                    statusDiv.innerHTML = `<p class="error">✗ ${data.error}</p>`;
+                    // Error response
+                    const text = await response.text();
+                    try {
+                        const data = JSON.parse(text);
+                        statusDiv.innerHTML = `<p class="error">✗ ${data.error || 'Error loading payslip'}</p>`;
+                    } catch {
+                        statusDiv.innerHTML = `<p class="error">✗ Error: ${response.status} ${response.statusText}</p>`;
+                    }
                 }
             } catch (error) {
-                statusDiv.innerHTML = `<p class="error">✗ Error: ${error.message}</p>`;
+                console.error('View payslip error:', error);
+                statusDiv.innerHTML = `<p class="error">✗ Error: ${error.message}. Please check your connection and try again.</p>`;
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalText;

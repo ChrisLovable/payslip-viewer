@@ -160,7 +160,10 @@ def view_payslip():
     
     # Check if month exists
     if month not in monthly_pdfs:
-        return jsonify({'error': f'No payslips found for {month}. Please select a different month.'}), 404
+        available_months = ', '.join(sorted(monthly_pdfs.keys())) if monthly_pdfs else 'none'
+        return jsonify({
+            'error': f'No payslips found for {month}. Available months: {available_months}. The service may have restarted - please re-upload the PDF.'
+        }), 404
     
     month_data = monthly_pdfs[month]
     pdf_path = month_data['path']
