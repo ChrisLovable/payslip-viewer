@@ -49,35 +49,21 @@
     </div>
 
     <script>
-        // Mobile optimizations
-        // Prevent double-tap zoom on buttons
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', function(event) {
-            const now = Date.now();
-            if (now - lastTouchEnd <= 300) {
-                event.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, false);
-        
-        // Prevent zoom on input focus (but allow pinch zoom for PDF)
-        const inputs = document.querySelectorAll('input[type="text"], input[type="month"], select');
-        inputs.forEach(input => {
-            input.addEventListener('focus', function() {
-                if (window.innerWidth < 768) {
-                    const viewport = document.querySelector('meta[name="viewport"]');
-                    viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+        // Wait for DOM to be fully loaded
+        (function() {
+            // Mobile optimizations
+            // Prevent double-tap zoom on buttons
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', function(event) {
+                const now = Date.now();
+                if (now - lastTouchEnd <= 300) {
+                    event.preventDefault();
                 }
-            });
+                lastTouchEnd = now;
+            }, false);
             
-            input.addEventListener('blur', function() {
-                const viewport = document.querySelector('meta[name="viewport"]');
-                viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
-            });
-        });
-        
-        // Load available months on page load
-        async function loadMonths() {
+            // Load available months on page load
+            async function loadMonths() {
             try {
                 const response = await fetch('/months');
                 const data = await response.json();
@@ -104,13 +90,40 @@
             }
         }
         
-        // Load months when page loads
-        loadMonths();
-        
-        // Only attach upload form handler if upload form exists (admin mode)
-        const uploadForm = document.getElementById('uploadForm');
-        if (uploadForm) {
-            uploadForm.addEventListener('submit', async (e) => {
+            // Prevent zoom on input focus (but allow pinch zoom for PDF)
+            function setupInputZoomPrevention() {
+                const inputs = document.querySelectorAll('input[type="text"], input[type="month"], select');
+                if (inputs && inputs.length > 0) {
+                    inputs.forEach(input => {
+                        if (input) {
+                            input.addEventListener('focus', function() {
+                                if (window.innerWidth < 768) {
+                                    const viewport = document.querySelector('meta[name="viewport"]');
+                                    if (viewport) {
+                                        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+                                    }
+                                }
+                            });
+                            
+                            input.addEventListener('blur', function() {
+                                const viewport = document.querySelector('meta[name="viewport"]');
+                                if (viewport) {
+                                    viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+            
+            // Load months when page loads
+            loadMonths();
+            setupInputZoomPrevention();
+            
+            // Only attach upload form handler if upload form exists (admin mode)
+            const uploadForm = document.getElementById('uploadForm');
+            if (uploadForm) {
+                uploadForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData();
             const monthInput = document.getElementById('uploadMonth');
@@ -302,12 +315,13 @@
             });
         }
         
-        // Attach handler when page loads
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', attachViewFormHandler);
-        } else {
-            attachViewFormHandler();
-        }
+            // Attach handler when page loads
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', attachViewFormHandler);
+            } else {
+                attachViewFormHandler();
+            }
+        })(); // End of IIFE - ensures everything runs after DOM is ready
     </script>
 </body>
 </html>
