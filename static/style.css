@@ -114,8 +114,8 @@ button {
 }
 
 #viewForm button {
-    background: #dc3545 !important;
-    background-color: #dc3545 !important;
+    background: #28a745 !important;
+    background-color: #28a745 !important;
 }
 
 button:active:not(:disabled) {

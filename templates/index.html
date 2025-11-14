@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#667eea">
     <title>Payslip Viewer</title>
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=3">
 </head>
 <body>
     <div class="container">
@@ -35,15 +35,11 @@
                     <option value="">Loading months...</option>
                 </select>
                 <input type="text" id="idNumber" placeholder="Enter your ID Number" required>
-                <button type="submit" style="background: #dc3545 !important; background-color: #dc3545 !important;">View Payslip</button>
+                <button type="submit" style="background: #28a745 !important; background-color: #28a745 !important;">View Payslip</button>
             </form>
             <div id="viewStatus"></div>
-            <div id="payslipContainer" style="display: none; margin-top: 20px;">
-                <div style="text-align: center; margin-bottom: 10px;">
-                    <a id="openLink" href="#" target="_blank" style="display: inline-block; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px;">Open in New Tab</a>
-                    <a id="downloadLink" href="#" download="payslip.pdf" style="display: inline-block; padding: 12px 24px; background: #28a745; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Download</a>
-                </div>
-                <iframe id="payslipViewer" style="width: 100%; min-height: 600px; height: calc(100vh - 400px); border: 2px solid #ddd; border-radius: 8px; background: #f8f9fa;"></iframe>
+            <div id="payslipContainer" style="display: none; margin-top: 20px; text-align: center;">
+                <a id="openLink" href="#" target="_blank" style="display: inline-block; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Open in New Tab</a>
             </div>
         </div>
     </div>
@@ -140,8 +136,6 @@
                 
                 const statusDiv = document.getElementById('viewStatus');
                 const container = document.getElementById('payslipContainer');
-                const viewer = document.getElementById('payslipViewer');
-                const downloadLink = document.getElementById('downloadLink');
                 const openLink = document.getElementById('openLink');
                 const submitBtn = e.target.querySelector('button');
                 const originalText = submitBtn.textContent;
@@ -168,13 +162,10 @@
                         }
                         
                         const url = URL.createObjectURL(blob);
-                        viewer.src = url;
                         openLink.href = url;
-                        downloadLink.href = url;
-                        downloadLink.download = `payslip_${idNumber}_${month}.pdf`;
                         
                         container.style.display = 'block';
-                        statusDiv.innerHTML = '<p class="success">✓ Payslip loaded!</p>';
+                        statusDiv.innerHTML = '<p class="success">✓ Payslip ready! Click "Open in New Tab" to view.</p>';
                     } else {
                         const text = await response.text();
                         try {
