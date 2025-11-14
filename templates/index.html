@@ -69,6 +69,11 @@
                 const data = await response.json();
                 const monthSelect = document.getElementById('viewMonth');
                 
+                if (!monthSelect) {
+                    console.error('viewMonth element not found');
+                    return;
+                }
+                
                 if (data.months && data.months.length > 0) {
                     monthSelect.innerHTML = '<option value="">Select a month...</option>';
                     data.months.forEach(month => {
@@ -86,7 +91,10 @@
                 }
             } catch (error) {
                 console.error('Error loading months:', error);
-                document.getElementById('viewMonth').innerHTML = '<option value="">Error loading months</option>';
+                const monthSelect = document.getElementById('viewMonth');
+                if (monthSelect) {
+                    monthSelect.innerHTML = '<option value="">Error loading months</option>';
+                }
             }
         }
         
@@ -116,9 +124,20 @@
                 }
             }
             
-            // Load months when page loads
-            loadMonths();
-            setupInputZoomPrevention();
+            // Wait for DOM to be ready before running
+            function init() {
+                // Load months when page loads
+                loadMonths();
+                setupInputZoomPrevention();
+            }
+            
+            // Run initialization
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                // DOM already loaded
+                init();
+            }
             
             // Only attach upload form handler if upload form exists (admin mode)
             const uploadForm = document.getElementById('uploadForm');
