@@ -124,16 +124,19 @@
                 }
             }
             
-            // Wait for DOM to be ready before running
-            function init() {
-                // Load months when page loads
-                loadMonths();
-                setupInputZoomPrevention();
+            // Ensure form handler is attached after page loads
+            function attachViewFormHandler() {
+                const viewForm = document.getElementById('viewForm');
+                if (!viewForm) {
+                    console.error('View form not found');
+                    return;
+                }
                 
-                // Only attach upload form handler if upload form exists (admin mode)
-                const uploadForm = document.getElementById('uploadForm');
-                if (uploadForm) {
-                    uploadForm.addEventListener('submit', async (e) => {
+                // Remove any existing listeners
+                const newForm = viewForm.cloneNode(true);
+                viewForm.parentNode.replaceChild(newForm, viewForm);
+                
+                newForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData();
             const monthInput = document.getElementById('uploadMonth');
@@ -183,27 +186,16 @@
                 }
             }
             
-            // Run initialization
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', init);
-            } else {
-                // DOM already loaded
-                init();
-            }
-        
-        // Ensure form handler is attached after page loads
-        function attachViewFormHandler() {
-            const viewForm = document.getElementById('viewForm');
-            if (!viewForm) {
-                console.error('View form not found');
-                return;
-            }
-            
-            // Remove any existing listeners
-            const newForm = viewForm.cloneNode(true);
-            viewForm.parentNode.replaceChild(newForm, viewForm);
-            
-            newForm.addEventListener('submit', async (e) => {
+            // Wait for DOM to be ready before running
+            function init() {
+                // Load months when page loads
+                loadMonths();
+                setupInputZoomPrevention();
+                
+                // Only attach upload form handler if upload form exists (admin mode)
+                const uploadForm = document.getElementById('uploadForm');
+                if (uploadForm) {
+                    uploadForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 
@@ -334,11 +326,16 @@
             });
         }
         
-            // Attach handler when page loads
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', attachViewFormHandler);
-            } else {
+                // Attach view form handler
                 attachViewFormHandler();
+            }
+            
+            // Run initialization
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                // DOM already loaded
+                init();
             }
         })(); // End of IIFE - ensures everything runs after DOM is ready
     </script>
