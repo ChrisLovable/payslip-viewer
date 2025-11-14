@@ -124,6 +124,68 @@
                 }
             }
             
+            // Wait for DOM to be ready before running
+            function init() {
+                // Load months when page loads
+                loadMonths();
+                setupInputZoomPrevention();
+                
+                // Only attach upload form handler if upload form exists (admin mode)
+                const uploadForm = document.getElementById('uploadForm');
+                if (uploadForm) {
+                    uploadForm.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const formData = new FormData();
+                        const monthInput = document.getElementById('uploadMonth');
+                        const monthValue = monthInput.value; // Format: YYYY-MM
+                        
+                        if (!monthValue) {
+                            document.getElementById('uploadStatus').innerHTML = '<p class="error">✗ Please select a month</p>';
+                            return;
+                        }
+                        
+                        formData.append('pdf', document.getElementById('pdfFile').files[0]);
+                        formData.append('month', monthValue);
+                        formData.append('admin_key', 'admin123'); // Admin secret key
+                        
+                        const statusDiv = document.getElementById('uploadStatus');
+                        const submitBtn = e.target.querySelector('button');
+                        const originalText = submitBtn.textContent;
+                        
+                        statusDiv.innerHTML = '<p class="loading">Uploading and processing PDF...</p>';
+                        submitBtn.disabled = true;
+                        submitBtn.textContent = 'Uploading...';
+                        
+                        try {
+                            const response = await fetch('/upload', {
+                                method: 'POST',
+                                body: formData
+                            });
+                            
+                            const data = await response.json();
+                            
+                            if (response.ok) {
+                                statusDiv.innerHTML = `<p class="success">✓ ${data.message}</p>`;
+                                // Reload months list
+                                loadMonths();
+                                // Reset form
+                                document.getElementById('uploadForm').reset();
+                            } else {
+                                statusDiv.innerHTML = `<p class="error">✗ ${data.error}</p>`;
+                            }
+                        } catch (error) {
+                            statusDiv.innerHTML = `<p class="error">✗ Upload failed: ${error.message}</p>`;
+                        } finally {
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = originalText;
+                        }
+                    });
+                }
+                
+                // Attach view form handler
+                attachViewFormHandler();
+            }
+            
             // Ensure form handler is attached after page loads
             function attachViewFormHandler() {
                 const viewForm = document.getElementById('viewForm');
@@ -137,65 +199,6 @@
                 viewForm.parentNode.replaceChild(newForm, viewForm);
                 
                 newForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData();
-            const monthInput = document.getElementById('uploadMonth');
-            const monthValue = monthInput.value; // Format: YYYY-MM
-            
-            if (!monthValue) {
-                document.getElementById('uploadStatus').innerHTML = '<p class="error">✗ Please select a month</p>';
-                return;
-            }
-            
-            formData.append('pdf', document.getElementById('pdfFile').files[0]);
-            formData.append('month', monthValue);
-            formData.append('admin_key', 'admin123'); // Admin secret key
-            
-            const statusDiv = document.getElementById('uploadStatus');
-            const submitBtn = e.target.querySelector('button');
-            const originalText = submitBtn.textContent;
-            
-            statusDiv.innerHTML = '<p class="loading">Uploading and processing PDF...</p>';
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Uploading...';
-            
-            try {
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    statusDiv.innerHTML = `<p class="success">✓ ${data.message}</p>`;
-                    // Reload months list
-                    loadMonths();
-                    // Reset form
-                    document.getElementById('uploadForm').reset();
-                } else {
-                    statusDiv.innerHTML = `<p class="error">✗ ${data.error}</p>`;
-                }
-            } catch (error) {
-                statusDiv.innerHTML = `<p class="error">✗ Upload failed: ${error.message}</p>`;
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalText;
-            }
-                    });
-                }
-            }
-            
-            // Wait for DOM to be ready before running
-            function init() {
-                // Load months when page loads
-                loadMonths();
-                setupInputZoomPrevention();
-                
-                // Only attach upload form handler if upload form exists (admin mode)
-                const uploadForm = document.getElementById('uploadForm');
-                if (uploadForm) {
-                    uploadForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 
