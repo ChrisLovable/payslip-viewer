@@ -29,7 +29,7 @@
         
         <div class="section">
             <h2>View Payslip</h2>
-            <form id="viewForm">
+            <form id="viewForm" onsubmit="return false;">
                 <label for="viewMonth">Select Month:</label>
                 <select id="viewMonth" required>
                     <option value="">Loading months...</option>
@@ -38,7 +38,7 @@
                 <button type="submit">View Payslip</button>
             </form>
             <div id="viewStatus"></div>
-            <iframe id="payslipViewer" style="display: none;"></iframe>
+            <iframe id="payslipViewer" style="display: none; width: 100%; height: 600px; border: 2px solid #ddd; border-radius: 8px; margin-top: 20px;"></iframe>
         </div>
     </div>
 
@@ -149,71 +149,108 @@
             }
         });
         
-        document.getElementById('viewForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const idNumber = document.getElementById('idNumber').value.trim();
-            const month = document.getElementById('viewMonth').value;
-            
-            if (!month) {
-                document.getElementById('viewStatus').innerHTML = '<p class="error">✗ Please select a month</p>';
+        // Ensure form handler is attached after page loads
+        function attachViewFormHandler() {
+            const viewForm = document.getElementById('viewForm');
+            if (!viewForm) {
+                console.error('View form not found');
                 return;
             }
             
-            const statusDiv = document.getElementById('viewStatus');
-            const viewer = document.getElementById('payslipViewer');
-            const submitBtn = e.target.querySelector('button');
-            const originalText = submitBtn.textContent;
+            // Remove any existing listeners
+            const newForm = viewForm.cloneNode(true);
+            viewForm.parentNode.replaceChild(newForm, viewForm);
             
-            statusDiv.innerHTML = '<p class="loading">Loading payslip...</p>';
-            viewer.style.display = 'none';
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Loading...';
-            
-            try {
-                const response = await fetch('/view', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ id_number: idNumber, month: month })
-                });
+            newForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 
-                // Check content type
-                const contentType = response.headers.get('content-type');
+                const idNumber = document.getElementById('idNumber').value.trim();
+                const month = document.getElementById('viewMonth').value;
                 
-                if (response.ok && contentType && contentType.includes('application/pdf')) {
-                    const blob = await response.blob();
-                    const url = URL.createObjectURL(blob);
-                    viewer.src = url;
-                    viewer.style.display = 'block';
-                    statusDiv.innerHTML = '';
-                } else if (response.ok) {
-                    // Not a PDF, might be an error message
-                    const text = await response.text();
-                    try {
-                        const data = JSON.parse(text);
-                        statusDiv.innerHTML = `<p class="error">✗ ${data.error || 'Unknown error'}</p>`;
-                    } catch {
-                        statusDiv.innerHTML = `<p class="error">✗ Unexpected response format</p>`;
-                    }
-                } else {
-                    // Error response
-                    const text = await response.text();
-                    try {
-                        const data = JSON.parse(text);
-                        statusDiv.innerHTML = `<p class="error">✗ ${data.error || 'Error loading payslip'}</p>`;
-                    } catch {
-                        statusDiv.innerHTML = `<p class="error">✗ Error: ${response.status} ${response.statusText}</p>`;
-                    }
+                if (!month) {
+                    document.getElementById('viewStatus').innerHTML = '<p class="error">✗ Please select a month</p>';
+                    return false;
                 }
-            } catch (error) {
-                console.error('View payslip error:', error);
-                statusDiv.innerHTML = `<p class="error">✗ Error: ${error.message}. Please check your connection and try again.</p>`;
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalText;
-            }
-        });
+                
+                if (!idNumber) {
+                    document.getElementById('viewStatus').innerHTML = '<p class="error">✗ Please enter your ID number</p>';
+                    return false;
+                }
+                
+                const statusDiv = document.getElementById('viewStatus');
+                const viewer = document.getElementById('payslipViewer');
+                const submitBtn = newForm.querySelector('button');
+                const originalText = submitBtn.textContent;
+                
+                statusDiv.innerHTML = '<p class="loading">Loading payslip...</p>';
+                viewer.style.display = 'none';
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Loading...';
+                
+                try {
+                    console.log('Fetching payslip for ID:', idNumber, 'Month:', month);
+                    const response = await fetch('/view', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ id_number: idNumber, month: month })
+                    });
+                    
+                    console.log('Response status:', response.status);
+                    console.log('Response content-type:', response.headers.get('content-type'));
+                    
+                    // Check content type
+                    const contentType = response.headers.get('content-type') || '';
+                    
+                    if (response.ok && contentType.includes('application/pdf')) {
+                        const blob = await response.blob();
+                        console.log('PDF blob size:', blob.size);
+                        const url = URL.createObjectURL(blob);
+                        viewer.src = url;
+                        viewer.style.display = 'block';
+                        statusDiv.innerHTML = '';
+                        console.log('Payslip displayed successfully');
+                    } else if (response.ok) {
+                        // Not a PDF, might be an error message
+                        const text = await response.text();
+                        console.log('Non-PDF response:', text);
+                        try {
+                            const data = JSON.parse(text);
+                            statusDiv.innerHTML = `<p class="error">✗ ${data.error || 'Unknown error'}</p>`;
+                        } catch {
+                            statusDiv.innerHTML = `<p class="error">✗ Unexpected response format</p>`;
+                        }
+                    } else {
+                        // Error response
+                        const text = await response.text();
+                        console.log('Error response:', text);
+                        try {
+                            const data = JSON.parse(text);
+                            statusDiv.innerHTML = `<p class="error">✗ ${data.error || 'Error loading payslip'}</p>`;
+                        } catch {
+                            statusDiv.innerHTML = `<p class="error">✗ Error: ${response.status} ${response.statusText}</p>`;
+                        }
+                    }
+                } catch (error) {
+                    console.error('View payslip error:', error);
+                    statusDiv.innerHTML = `<p class="error">✗ Error: ${error.message}. Please check your connection and try again.</p>`;
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                }
+                
+                return false;
+            });
+        }
+        
+        // Attach handler when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', attachViewFormHandler);
+        } else {
+            attachViewFormHandler();
+        }
     </script>
 </body>
 </html>
