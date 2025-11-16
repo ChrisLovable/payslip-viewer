@@ -4,6 +4,7 @@ import os
 import PyPDF2
 import io
 import re
+import json
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -18,6 +19,36 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Store PDF data by month: month_key -> {pdf_path, pdf_data}
 # month_key format: "YYYY-MM" (e.g., "2024-01")
 monthly_pdfs = {}  # {month_key: {'path': str, 'data': {id_number: page_num}}}
+DATA_FILE = 'monthly_pdfs_data.json'
+
+def load_persisted_data():
+    """Load persisted PDF data from file"""
+    global monthly_pdfs
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, 'r') as f:
+                data = json.load(f)
+                # Verify files still exist before loading
+                for month, month_data in data.items():
+                    if os.path.exists(month_data['path']):
+                        monthly_pdfs[month] = month_data
+                    else:
+                        print(f"Warning: PDF file not found for {month}: {month_data['path']}")
+                print(f"Loaded {len(monthly_pdfs)} months from persistent storage")
+        except Exception as e:
+            print(f"Error loading persisted data: {e}")
+
+def save_persisted_data():
+    """Save PDF data to file for persistence"""
+    try:
+        with open(DATA_FILE, 'w') as f:
+            json.dump(monthly_pdfs, f)
+        print(f"Saved {len(monthly_pdfs)} months to persistent storage")
+    except Exception as e:
+        print(f"Error saving persisted data: {e}")
+
+# Load persisted data on startup
+load_persisted_data()
 
 def extract_id_from_text(text):
     """Extract ID number from text - looks for common ID patterns"""
@@ -119,6 +150,9 @@ def upload_file():
                 'path': filepath,
                 'data': pdf_data
             }
+            
+            # Save to persistent storage
+            save_persisted_data()
             
             return jsonify({
                 'success': True,
